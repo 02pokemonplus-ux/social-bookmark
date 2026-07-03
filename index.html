@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>社群貼文收藏庫</title>
+<style>
+  :root {
+    --bg: #F1F0EC; --card: #FFFFFF; --border: #E4E2DC;
+    --text: #1A1A1A; --sub: #6E6C66; --faint: #9C9A94;
+    --input-bg: #FFFFFF; --chip-on: #1A1A1A; --chip-on-text: #FFFFFF;
+    --accent: #B08A3E; --link: #3B6FB5; --unread: #2F8F5B; --danger: #C25656;
+  }
+  html[data-theme="dark"] {
+    --bg: #161616; --card: #1F1F1F; --border: #2C2C2C;
+    --text: #F0EFEA; --sub: #9C9A94; --faint: #6E6C66;
+    --input-bg: #191919; --chip-on: #F0EFEA; --chip-on-text: #161616;
+    --accent: #C9A45C; --link: #8FB4E8; --unread: #7FC79A; --danger: #E08585;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: 'Noto Sans TC','PingFang TC',system-ui,-apple-system,sans-serif;
+    padding: 0 16px 80px; transition: background .25s, color .25s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  header { padding: 48px 0 6px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  h1 { font-size: 30px; font-weight: 800; margin: 0; line-height: 1.25; }
+  .sub { color: var(--sub); font-size: 14.5px; margin-top: 10px; }
+  .theme-btn {
+    width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+    border: 1.5px solid var(--border); background: var(--card); color: var(--text);
+    font-size: 18px; cursor: pointer; margin-top: 4px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  html[data-theme="dark"] .theme-btn { border-color: var(--accent); }
+  .search-row { display: flex; gap: 10px; margin: 26px 0 16px; }
+  .search {
+    flex: 1; background: var(--input-bg); border: 1px solid var(--border);
+    border-radius: 16px; padding: 13px 16px; color: var(--text); font-size: 15px; outline: none;
+  }
+  .add-btn {
+    background: var(--chip-on); color: var(--chip-on-text); border: none;
+    border-radius: 16px; padding: 0 22px; font-size: 15px; font-weight: 700;
+    cursor: pointer; white-space: nowrap;
+  }
+  .chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .chip {
+    padding: 7px 15px; border-radius: 999px; font-size: 13.5px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--card); color: var(--sub);
+    user-select: none;
+  }
+  .chip.on { border-color: var(--chip-on); background: var(--chip-on); color: var(--chip-on-text); font-weight: 700; }
+  .form-box { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 20px; margin: 6px 0 22px; }
+  label { font-size: 12.5px; color: var(--sub); margin-bottom: 6px; display: block; }
+  .inp {
+    width: 100%; background: var(--input-bg); border: 1px solid var(--border);
+    border-radius: 12px; padding: 11px 13px; color: var(--text); font-size: 14px;
+    outline: none; margin-bottom: 12px;
+  }
+  .detect { margin-top: -6px; margin-bottom: 12px; font-size: 12.5px; color: var(--accent); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 18px 20px; margin-bottom: 14px; }
+  .card.seen { opacity: .6; }
+  .card-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .thumb { width: 100%; border-radius: 12px; margin: 4px 0 10px; display: block; }
+  .meta { font-size: 12.5px; color: var(--faint); margin-bottom: 8px; }
+  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  .title { font-size: 16.5px; font-weight: 700; line-height: 1.45; }
+  .note { font-size: 14px; color: var(--sub); margin-top: 6px; line-height: 1.65; }
+  .lnk { font-size: 12.5px; color: var(--link); word-break: break-all; display: inline-block; margin-top: 8px; text-decoration: none; }
+  .tag {
+    display: inline-block; background: var(--bg); color: var(--sub); border: 1px solid var(--border);
+    border-radius: 8px; padding: 2px 10px; font-size: 12px; margin-right: 6px; margin-top: 8px; cursor: pointer;
+  }
+  .small-btn { background: transparent; border: 1px solid var(--border); color: var(--sub); border-radius: 10px; padding: 5px 12px; font-size: 12.5px; cursor: pointer; margin-left: 8px; }
+  .small-btn.danger { color: var(--danger); }
+  .empty { text-align: center; padding: 60px 20px; color: var(--sub); line-height: 1.8; }
+  .count { text-align: center; color: var(--faint); font-size: 12.5px; margin-top: 26px; }
+  .actions { display: flex; flex-shrink: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>社群貼文收藏庫</h1>
+      <div class="sub">把滑到的好貼文存起來，分類、標記、關鍵字找回</div>
+    </div>
+    <button class="theme-btn" id="themeBtn" aria-label="切換晝夜模式">☾</button>
+  </header>
+
+  <div class="search-row">
+    <input class="search" id="search" placeholder="搜尋標題、備註、標籤、分類">
+    <button class="add-btn" id="toggleForm">＋ 收藏</button>
+  </div>
+
+  <div class="form-box" id="formBox" style="display:none;">
+    <label>貼文連結（YouTube 自動抓標題）</label>
+    <input class="inp" id="fUrl" placeholder="https://">
+    <div class="detect" id="detect" style="display:none;"></div>
+    <label>標題</label>
+    <input class="inp" id="fTitle" placeholder="幫這則貼文取個好找的名字">
+    <label>備註（選填）</label>
+    <input class="inp" id="fNote" placeholder="為什麼存它、重點是什麼">
+    <label>分類</label>
+    <div class="chip-row" id="catChips"></div>
+    <input class="inp" id="fNewCat" placeholder="或輸入新分類">
+    <label>標籤（用逗號分隔）</label>
+    <input class="inp" id="fTags" placeholder="貓, 搞笑, 週末想看">
+    <div style="display:flex; gap:10px; margin-top:4px;">
+      <button class="add-btn" id="saveBtn" style="padding:12px 24px;">存起來</button>
+      <button class="small-btn" id="cancelBtn" style="padding:12px 20px; margin-left:0;">取消</button>
+    </div>
+  </div>
+
+  <div class="chip-row" id="catFilter"></div>
+  <div class="chip-row" id="seenFilter"></div>
+  <div class="chip-row" id="platformFilter" style="margin-bottom:22px;"></div>
+
+  <div id="list"><div class="empty">載入中…</div></div>
+  <div class="count" id="count"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+// ====== Firebase 設定 ======
+const firebaseConfig = {
+  apiKey: "AIzaSyAXTVIKimcjWv6ehkJUirX3uS883bqq4EE",
+  authDomain: "social-bookmark-3baa0.firebaseapp.com",
+  projectId: "social-bookmark-3baa0",
+  storageBucket: "social-bookmark-3baa0.firebasestorage.app",
+  messagingSenderId: "1024576106796",
+  appId: "1:1024576106796:web:c04875f80f3b76da63bc89"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const col = collection(db, "bookmarks");
+
+// ====== 平台偵測 ======
+const PLATFORMS = {
+  instagram:"Instagram", threads:"Threads", x:"X",
+  youtube:"YouTube", facebook:"Facebook", tiktok:"TikTok", other:"其他"
+};
+function detectPlatform(url){
+  const u=(url||"").toLowerCase();
+  if(u.includes("instagram.com"))return"instagram";
+  if(u.includes("threads."))return"threads";
+  if(u.includes("twitter.com")||u.includes("x.com"))return"x";
+  if(u.includes("youtube.com")||u.includes("youtu.be"))return"youtube";
+  if(u.includes("facebook.com")||u.includes("fb.com"))return"facebook";
+  if(u.includes("tiktok.com"))return"tiktok";
+  return"other";
+}
+function ytId(url){
+  const m=(url||"").match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([\w-]{11})/);
+  return m?m[1]:null;
+}
+async function fetchYouTubeTitle(url){
+  try{
+    const r=await fetch("https://www.youtube.com/oembed?format=json&url="+encodeURIComponent(url));
+    if(!r.ok)return null;
+    const d=await r.json();
+    return d.title||null;
+  }catch(e){return null;}
+}
+
+// ====== 狀態 ======
+const DEFAULT_CATS=["迷因","美食","穿搭","知識","音樂","待看"];
+let posts=[], categories=[...DEFAULT_CATS];
+let query_="", activeCat="全部", activeSeen="全部", activePlatform="全部";
+let editingId=null, formCat="", uid=null;
+
+// ====== 主題 ======
+const THEME_KEY="sbk-theme";
+const themeBtn=document.getElementById("themeBtn");
+function applyTheme(t){
+  document.documentElement.setAttribute("data-theme", t==="dark"?"dark":"light");
+  themeBtn.textContent = t==="dark" ? "☀" : "☾";
+}
+applyTheme(localStorage.getItem(THEME_KEY)||"light");
+themeBtn.onclick=()=>{
+  const next=document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark";
+  localStorage.setItem(THEME_KEY,next); applyTheme(next);
+};
+
+// ====== 登入 + 即時同步 ======
+onAuthStateChanged(auth, user=>{
+  if(user){
+    uid=user.uid;
+    const q=query(col, orderBy("createdAt","desc"));
+    onSnapshot(q, snap=>{
+      posts=snap.docs.map(d=>({id:d.id,...d.data()}));
+      const cats=new Set(DEFAULT_CATS);
+      posts.forEach(p=>{ if(p.category) cats.add(p.category); });
+      categories=[...cats];
+      render();
+    }, err=>{
+      document.getElementById("list").innerHTML='<div class="empty">連線失敗：'+err.message+'</div>';
+    });
+  }
+});
+signInAnonymously(auth).catch(e=>{
+  document.getElementById("list").innerHTML='<div class="empty">登入失敗：'+e.message+'</div>';
+});
+
+// ====== 表單 ======
+const el=id=>document.getElementById(id);
+const formBox=el("formBox");
+el("toggleForm").onclick=()=>{ resetForm(); formBox.style.display = formBox.style.display==="none"?"block":"none"; el("toggleForm").textContent = formBox.style.display==="none"?"＋ 收藏":"收起"; };
+el("cancelBtn").onclick=resetForm;
+el("fUrl").addEventListener("input", async e=>{
+  const url=e.target.value.trim();
+  const d=el("detect");
+  if(url){ d.style.display="block"; d.textContent="辨識為 "+PLATFORMS[detectPlatform(url)]; }
+  else d.style.display="none";
+  if(ytId(url) && !el("fTitle").value.trim()){
+    const t=await fetchYouTubeTitle(url);
+    if(t && !el("fTitle").value.trim()) el("fTitle").value=t;
+  }
+});
+el("search").addEventListener("input", e=>{ query_=e.target.value; render(); });
+el("saveBtn").onclick=savePost;
+
+function resetForm(){
+  editingId=null; formCat="";
+  el("fUrl").value=""; el("fTitle").value=""; el("fNote").value=""; el("fNewCat").value=""; el("fTags").value="";
+  el("detect").style.display="none";
+  el("saveBtn").textContent="存起來";
+  formBox.style.display="none"; el("toggleForm").textContent="＋ 收藏";
+  renderCatChips();
+}
+function startEdit(p){
+  editingId=p.id; formCat=p.category||"";
+  el("fUrl").value=p.url||""; el("fTitle").value=p.title||""; el("fNote").value=p.note||"";
+  el("fNewCat").value=""; el("fTags").value=(p.tags||[]).join(", ");
+  el("saveBtn").textContent="儲存變更";
+  formBox.style.display="block"; el("toggleForm").textContent="收起";
+  renderCatChips();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+async function savePost(){
+  const url=el("fUrl").value.trim();
+  const title=el("fTitle").value.trim()||url;
+  if(!url && !title) return;
+  const cat=el("fNewCat").value.trim()||formCat;
+  const tags=el("fTags").value.split(/[,，、]/).map(t=>t.trim()).filter(Boolean);
+  const data={ url, title, note:el("fNote").value.trim(), category:cat, tags, platform:detectPlatform(url) };
+  el("saveBtn").disabled=true;
+  try{
+    if(editingId){ await updateDoc(doc(db,"bookmarks",editingId), data); }
+    else{ await addDoc(col, {...data, seen:false, createdAt:serverTimestamp()}); }
+    resetForm();
+  }catch(e){ alert("儲存失敗："+e.message); }
+  el("saveBtn").disabled=false;
+}
+async function toggleSeen(id,seen){ try{ await updateDoc(doc(db,"bookmarks",id),{seen:!seen}); }catch(e){alert(e.message);} }
+async function removePost(id){ if(!confirm("確定刪除這則收藏？"))return; try{ await deleteDoc(doc(db,"bookmarks",id)); }catch(e){alert(e.message);} }
+
+// ====== 渲染 ======
+function renderCatChips(){
+  const box=el("catChips"); box.innerHTML="";
+  categories.forEach(c=>{
+    const s=document.createElement("span");
+    s.className="chip"+((formCat===c && !el("fNewCat").value.trim())?" on":"");
+    s.textContent=c;
+    s.onclick=()=>{ formCat=c; el("fNewCat").value=""; renderCatChips(); };
+    box.appendChild(s);
+  });
+}
+function chipInto(box, items, active, onPick, labelFn){
+  box.innerHTML="";
+  items.forEach(it=>{
+    const val = typeof it==="object"?it.val:it;
+    const lab = labelFn?labelFn(it):(typeof it==="object"?it.lab:it);
+    const s=document.createElement("span");
+    s.className="chip"+(active===val?" on":"");
+    s.textContent=lab;
+    s.onclick=()=>onPick(val);
+    box.appendChild(s);
+  });
+}
+function fmtDate(ts){
+  let d; if(ts&&ts.seconds) d=new Date(ts.seconds*1000); else if(ts) d=new Date(ts); else return "";
+  return d.getFullYear()+"/"+(d.getMonth()+1)+"/"+d.getDate();
+}
+function render(){
+  chipInto(el("catFilter"), ["全部",...categories], activeCat, v=>{activeCat=v;render();});
+  chipInto(el("seenFilter"),
+    [{val:"全部",lab:"全部狀態"},{val:"未看",lab:"未看"},{val:"已看",lab:"已看"}],
+    activeSeen, v=>{activeSeen=v;render();});
+  const used=[...new Set(posts.map(p=>p.platform))];
+  const pfItems=[{val:"全部",lab:"所有平台"},...used.map(pk=>({val:pk,lab:PLATFORMS[pk]||pk}))];
+  el("platformFilter").style.display = used.length?"flex":"none";
+  chipInto(el("platformFilter"), pfItems, activePlatform, v=>{activePlatform=v;render();});
+
+  const q=query_.trim().toLowerCase();
+  const filtered=posts.filter(p=>{
+    if(activeCat!=="全部" && p.category!==activeCat) return false;
+    if(activePlatform!=="全部" && p.platform!==activePlatform) return false;
+    if(activeSeen==="未看" && p.seen) return false;
+    if(activeSeen==="已看" && !p.seen) return false;
+    if(!q) return true;
+    return [p.title,p.note,p.url,p.category,...(p.tags||[])].join(" ").toLowerCase().includes(q);
+  });
+
+  const list=el("list");
+  if(filtered.length===0){
+    list.innerHTML='<div class="empty">'+(posts.length===0
+      ?"還沒有收藏。點右上角「＋ 收藏」，把第一則貼文存進來。"
+      :"找不到符合的貼文，換個關鍵字或篩選條件試試。")+'</div>';
+  }else{
+    list.innerHTML="";
+    filtered.forEach(p=>{
+      const card=document.createElement("div");
+      card.className="card"+(p.seen?" seen":"");
+      const yid=ytId(p.url);
+      const thumb = yid?'<img class="thumb" loading="lazy" src="https://i.ytimg.com/vi/'+yid+'/hqdefault.jpg" alt="">':"";
+      card.innerHTML=
+        '<div class="card-row"><div style="min-width:0;flex:1;">'+
+          '<div class="meta">'+
+            '<span class="dot" style="background:'+(p.seen?"var(--faint)":"var(--unread)")+'"></span>'+
+            '<span style="color:'+(p.seen?"var(--faint)":"var(--unread)")+';font-weight:600;">'+(p.seen?"已看":"未看")+'</span>'+
+            '<span> · '+(PLATFORMS[p.platform]||"其他")+' · '+fmtDate(p.createdAt)+'</span>'+
+            (p.category?'<span style="color:var(--accent);"> · '+esc(p.category)+'</span>':'')+
+          '</div>'+
+          thumb+
+          '<div class="title">'+esc(p.title)+'</div>'+
+          (p.note?'<div class="note">'+esc(p.note)+'</div>':'')+
+          (p.url?'<a class="lnk" href="'+esc(p.url)+'" target="_blank" rel="noreferrer">'+esc(p.url)+'</a>':'')+
+          (p.tags&&p.tags.length?'<div>'+p.tags.map(t=>'<span class="tag" data-tag="'+esc(t)+'">#'+esc(t)+'</span>').join('')+'</div>':'')+
+        '</div><div class="actions">'+
+          '<button class="small-btn" data-seen="'+p.id+'" style="margin-left:0;">'+(p.seen?"標為未看":"標為已看")+'</button>'+
+          '<button class="small-btn" data-edit="'+p.id+'">編輯</button>'+
+          '<button class="small-btn danger" data-del="'+p.id+'">刪除</button>'+
+        '</div></div>';
+      list.appendChild(card);
+      card.querySelectorAll("[data-tag]").forEach(t=>t.onclick=()=>{el("search").value=t.dataset.tag;query_=t.dataset.tag;render();});
+      card.querySelector("[data-seen]").onclick=()=>toggleSeen(p.id,p.seen);
+      card.querySelector("[data-edit]").onclick=()=>startEdit(p);
+      card.querySelector("[data-del]").onclick=()=>removePost(p.id);
+    });
+  }
+  el("count").textContent = posts.length?("共 "+posts.length+" 則收藏 · 顯示 "+filtered.length+" 則"):"";
+}
+function esc(s){ return (s||"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+</script>
+</body>
+</html>
