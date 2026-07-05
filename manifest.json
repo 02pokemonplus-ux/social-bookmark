@@ -1,0 +1,12 @@
+{
+  "name": "社群貼文收藏庫",
+  "short_name": "收藏庫",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F1F0EC",
+  "theme_color": "#B08A3E",
+  "icons": [
+    { "src": "./icon.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
