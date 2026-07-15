@@ -10,7 +10,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="收藏庫">
 <meta name="theme-color" content="#b8860b">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://www.gstatic.com">
+<link rel="preconnect" href="https://firestore.googleapis.com">
+<link rel="preconnect" href="https://identitytoolkit.googleapis.com">
 <style>
   :root {
     --bg: #f5f5f3; --surface: #fff; --border: #e0e0e0;
@@ -28,7 +30,7 @@
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: 'Noto Sans TC', sans-serif;
+    font-family: 'PingFang TC','Heiti TC','Microsoft JhengHei',system-ui,sans-serif;
     background: var(--bg); color: var(--text);
     min-height: 100vh; transition: background .2s, color .2s;
     -webkit-tap-highlight-color: transparent;
@@ -149,6 +151,18 @@
   .count { text-align: center; color: var(--text3); font-size: 12.5px; margin-top: 26px; }
   .check { width: 20px; height: 20px; margin-top: 2px; flex-shrink: 0; accent-color: var(--gold); }
   .pin-mark { color: var(--gold); font-weight: 700; }
+  .tool-btn.active { background: var(--gold); border-color: var(--gold); color: var(--surface); }
+  .icon-act {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    border: 1px solid var(--border); background: var(--bg);
+    color: var(--text2); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color .15s, color .15s;
+  }
+  .icon-act:hover { border-color: var(--gold); color: var(--text); }
+  .icon-act.danger:hover { border-color: var(--danger); color: var(--danger); }
+  .icon-act.on { background: var(--gold); border-color: var(--gold); color: var(--surface); }
+  .icon-acts { display: flex; gap: 6px; flex-shrink: 0; }
 
   .fab {
     position: fixed; right: 22px; bottom: calc(22px + env(safe-area-inset-bottom));
@@ -247,6 +261,11 @@
           </button>
         </div>
         <div class="toolbar">
+          <button class="tool-btn" id="editModeBtn" aria-label="編輯模式">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+            </svg>
+          </button>
           <button class="tool-btn theme" id="themeBtn" aria-label="切換晝夜模式"></button>
         </div>
         <h1>社群收藏庫</h1>
@@ -356,6 +375,7 @@ let posts=[], categories=[...DEFAULT_CATS], catsDocLoaded=false, postsLoaded=fal
 let query_="", activeCat="全部", activeSeen="全部", activePlatform="全部";
 let editingId=null, formCat="";
 let selectMode=false, selected=new Set();
+let editMode=false;
 
 const el=id=>document.getElementById(id);
 function esc(s){ return (s||"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -373,6 +393,13 @@ themeBtn.onclick=()=>{
   const dark=!document.body.classList.contains("dark");
   localStorage.setItem("sbk-theme", dark?"dark":"light");
   applyTheme(dark);
+};
+
+/* 編輯模式 */
+el("editModeBtn").onclick=()=>{
+  editMode=!editMode;
+  el("editModeBtn").classList.toggle("active", editMode);
+  render();
 };
 
 /* 側欄 */
@@ -602,6 +629,10 @@ function render(){
       const card=document.createElement("div"); card.className="card"+(p.seen?" seen":"");
       const yid=ytId(p.url);
       const catSelect = !p.category ? '<div><select class="cat-select" data-catsel><option value="">選擇分類…</option>'+categories.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join("")+'</select></div>' : "";
+      const ICON_PIN='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16h14v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1Z"/></svg>';
+      const ICON_EYE='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
+      const ICON_PEN='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>';
+      const ICON_TRASH='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg>';
       card.innerHTML=
         '<div class="card-row">'+
         (selectMode?'<input type="checkbox" class="check" data-check'+(selected.has(p.id)?" checked":"")+'>':"")+
@@ -620,12 +651,12 @@ function render(){
           (p.tags&&p.tags.length?'<div>'+p.tags.map(t=>'<span class="tag" data-tag="'+esc(t)+'">#'+esc(t)+'</span>').join('')+'</div>':'')+
           catSelect+
         '</div>'+
-        (!selectMode?
-        '<div class="actions">'+
-          '<button class="small-btn" data-pin style="margin-left:0;">'+(p.pinned?"取消置頂":"置頂")+'</button>'+
-          '<button class="small-btn" data-seen>'+(p.seen?"標為未看":"標為已看")+'</button>'+
-          '<button class="small-btn" data-edit>編輯</button>'+
-          '<button class="small-btn danger" data-del>刪除</button>'+
+        (editMode && !selectMode?
+        '<div class="icon-acts">'+
+          '<button class="icon-act'+(p.pinned?" on":"")+'" data-pin title="'+(p.pinned?"取消置頂":"置頂")+'">'+ICON_PIN+'</button>'+
+          '<button class="icon-act'+(p.seen?" on":"")+'" data-seen title="'+(p.seen?"標為未看":"標為已看")+'">'+ICON_EYE+'</button>'+
+          '<button class="icon-act" data-edit title="編輯">'+ICON_PEN+'</button>'+
+          '<button class="icon-act danger" data-del title="刪除">'+ICON_TRASH+'</button>'+
         '</div>':"")+
         '</div>';
       list.appendChild(card);
@@ -633,7 +664,7 @@ function render(){
       const sel=card.querySelector("[data-catsel]"); if(sel) sel.onchange=e=>{ if(e.target.value) setCategory(p.id,e.target.value); };
       if(selectMode){
         card.querySelector("[data-check]").onchange=e=>{ if(e.target.checked) selected.add(p.id); else selected.delete(p.id); updateBatchBar(); };
-      }else{
+      }else if(editMode){
         card.querySelector("[data-pin]").onclick=()=>togglePin(p.id,p.pinned);
         card.querySelector("[data-seen]").onclick=()=>toggleSeen(p.id,p.seen);
         card.querySelector("[data-edit]").onclick=()=>startEdit(p);
