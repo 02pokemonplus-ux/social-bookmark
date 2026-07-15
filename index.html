@@ -167,6 +167,11 @@
   .icon-act.danger:hover { border-color: var(--danger); color: var(--danger); }
   .icon-act.on { background: var(--gold); border-color: var(--gold); color: var(--surface); }
   .icon-acts { display: flex; gap: 6px; flex-shrink: 0; }
+  .corner-thumb {
+    width: 54px; height: 54px; border-radius: 10px; object-fit: cover;
+    flex-shrink: 0; border: 1px solid var(--border); cursor: pointer;
+  }
+  .thumb-view { max-width: 100%; border-radius: 12px; display: block; }
 
   .fab {
     position: fixed; right: 22px; bottom: calc(22px + env(safe-area-inset-bottom));
@@ -320,6 +325,13 @@
       <button class="add-btn" id="addCatBtn" style="padding:0 16px;">新增</button>
     </div>
     <button class="small-btn" id="catClose" style="margin:16px 0 0;padding:9px 18px;">關閉</button>
+  </div>
+</div>
+
+<div class="overlay" id="zoomOverlay">
+  <div class="modal" style="max-width:520px;">
+    <div id="zoomContent"></div>
+    <button class="small-btn" id="zoomClose" style="margin:14px 0 0;padding:9px 18px;">關閉</button>
   </div>
 </div>
 
@@ -569,6 +581,8 @@ function renderCatManage(){
 }
 
 /* 隨機 */
+el("zoomClose").onclick=()=>{ el("zoomOverlay").style.display="none"; };
+el("zoomOverlay").addEventListener("click",e=>{ if(e.target.id==="zoomOverlay") el("zoomOverlay").style.display="none"; });
 el("mRandom").onclick=showRandom;
 el("randAgain").onclick=showRandom;
 el("randClose").onclick=()=>{ el("randOverlay").style.display="none"; };
@@ -661,10 +675,16 @@ function render(){
           '<button class="icon-act'+(p.seen?" on":"")+'" data-seen title="'+(p.seen?"標為未看":"標為已看")+'">'+ICON_EYE+'</button>'+
           '<button class="icon-act" data-edit title="編輯">'+ICON_PEN+'</button>'+
           '<button class="icon-act danger" data-del title="刪除">'+ICON_TRASH+'</button>'+
-        '</div>':"")+
+        '</div>':
+        (p.thumb?'<img class="corner-thumb" data-zoom src="'+p.thumb+'" alt="截圖">':""))+
         '</div>';
       list.appendChild(card);
       card.querySelectorAll("[data-tag]").forEach(t=>t.onclick=()=>{el("search").value=t.dataset.tag;query_=t.dataset.tag;render();});
+      const zoomImg=card.querySelector("[data-zoom]");
+      if(zoomImg) zoomImg.onclick=()=>{
+        el("zoomContent").innerHTML='<img class="thumb-view" src="'+p.thumb+'" alt="截圖">';
+        el("zoomOverlay").style.display="flex";
+      };
       const sel=card.querySelector("[data-catsel]"); if(sel) sel.onchange=e=>{ if(e.target.value) setCategory(p.id,e.target.value); };
       if(selectMode){
         card.querySelector("[data-check]").onchange=e=>{ if(e.target.checked) selected.add(p.id); else selected.delete(p.id); updateBatchBar(); };
